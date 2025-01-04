@@ -1,4 +1,4 @@
-from    omniglot import Omniglot
+from    omniglot_dataset import OmniglotDataset
 import  torchvision.transforms as transforms
 from    PIL import Image
 import  os.path
@@ -21,13 +21,14 @@ class OmniglotNShot:
         self.resize = imgsz
         if not os.path.isfile(os.path.join(root, 'omniglot.npy')):
             # if root/data.npy does not exist, just download it
-            self.x = Omniglot(root, download=True,
-                              transform=transforms.Compose([lambda x: Image.open(x).convert('L'),
-                                                            lambda x: x.resize((imgsz, imgsz)),
-                                                            lambda x: np.reshape(x, (imgsz, imgsz, 1)),
-                                                            lambda x: np.transpose(x, [2, 0, 1]),
-                                                            lambda x: x/255.])
-                              )
+            self.x = OmniglotDataset(root, download=True,
+                transform=transforms.Compose([
+                    lambda x: Image.open(x).convert('L'),
+                    lambda x: x.resize((imgsz, imgsz)),
+                    lambda x: np.reshape(x, (imgsz, imgsz, 1)),
+                    lambda x: np.transpose(x, [2, 0, 1]),
+                    lambda x: x/255.])
+                )
 
             temp = dict()  # {label:img1, img2..., 20 imgs, label2: img1, img2,... in total, 1623 label}
             for (img, label) in self.x:

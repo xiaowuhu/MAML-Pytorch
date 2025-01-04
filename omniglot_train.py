@@ -3,7 +3,7 @@ import  numpy as np
 from    omniglotNShot import OmniglotNShot
 import  argparse
 
-from    meta import Meta
+from    meta_learner import MetaLearner
 
 def main(args):
 
@@ -31,7 +31,7 @@ def main(args):
     ]
 
     device = torch.device('cuda')
-    maml = Meta(args, config).to(device)
+    maml = MetaLearner(args, config).to(device)
 
     tmp = filter(lambda x: x.requires_grad, maml.parameters())
     num = sum(map(lambda x: np.prod(x.shape), tmp))
@@ -45,11 +45,11 @@ def main(args):
                        k_query=args.k_qry,
                        imgsz=args.imgsz)
 
-    for step in range(args.epoch):
+    for step in range(args.epoch):  # 外循环
 
         x_spt, y_spt, x_qry, y_qry = db_train.next()
-        x_spt, y_spt, x_qry, y_qry = torch.from_numpy(x_spt).to(device), torch.from_numpy(y_spt).to(device), \
-                                     torch.from_numpy(x_qry).to(device), torch.from_numpy(y_qry).to(device)
+        x_spt, y_spt, x_qry, y_qry = torch.from_numpy(x_spt).to(device), torch.from_numpy(y_spt).to(dtype=torch.long).to(device), \
+                                     torch.from_numpy(x_qry).to(device), torch.from_numpy(y_qry).to(dtype=torch.long).to(device)
 
         # set traning=True to update running_mean, running_variance, bn_weights, bn_bias
         accs = maml(x_spt, y_spt, x_qry, y_qry)
@@ -62,8 +62,8 @@ def main(args):
             for _ in range(1000//args.task_num):
                 # test
                 x_spt, y_spt, x_qry, y_qry = db_train.next('test')
-                x_spt, y_spt, x_qry, y_qry = torch.from_numpy(x_spt).to(device), torch.from_numpy(y_spt).to(device), \
-                                             torch.from_numpy(x_qry).to(device), torch.from_numpy(y_qry).to(device)
+                x_spt, y_spt, x_qry, y_qry = torch.from_numpy(x_spt).to(device), torch.from_numpy(y_spt).to(dtype=torch.long).to(device), \
+                                             torch.from_numpy(x_qry).to(device), torch.from_numpy(y_qry).to(dtype=torch.long).to(device)
 
                 # split to single task each time
                 for x_spt_one, y_spt_one, x_qry_one, y_qry_one in zip(x_spt, y_spt, x_qry, y_qry):

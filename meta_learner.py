@@ -11,7 +11,7 @@ from    copy import deepcopy
 
 
 
-class Meta(nn.Module):
+class MetaLearner(nn.Module):
     """
     Meta Learner
     """
@@ -20,7 +20,7 @@ class Meta(nn.Module):
 
         :param args:
         """
-        super(Meta, self).__init__()
+        super(MetaLearner, self).__init__()
 
         self.update_lr = args.update_lr
         self.meta_lr = args.meta_lr
@@ -61,7 +61,7 @@ class Meta(nn.Module):
 
         return total_norm/counter
 
-
+    # spt = support set, qry == query set
     def forward(self, x_spt, y_spt, x_qry, y_qry):
         """
 
@@ -78,15 +78,15 @@ class Meta(nn.Module):
         corrects = [0 for _ in range(self.update_step + 1)]
 
 
-        for i in range(task_num):
+        for i in range(task_num): # 内循环
 
-            # 1. run the i-th task and compute loss for k=0
+            # 1. run the i-th task and compute loss for k=0 by using support set
             logits = self.net(x_spt[i], vars=None, bn_training=True)
             loss = F.cross_entropy(logits, y_spt[i])
             grad = torch.autograd.grad(loss, self.net.parameters())
             fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, self.net.parameters())))
 
-            # this is the loss and accuracy before first update
+            # this is the loss and accuracy before first update by using query set
             with torch.no_grad():
                 # [setsz, nway]
                 logits_q = self.net(x_qry[i], self.net.parameters(), bn_training=True)
@@ -97,7 +97,7 @@ class Meta(nn.Module):
                 correct = torch.eq(pred_q, y_qry[i]).sum().item()
                 corrects[0] = corrects[0] + correct
 
-            # this is the loss and accuracy after the first update
+            # this is the loss and accuracy after the first update by using query set
             with torch.no_grad():
                 # [setsz, nway]
                 logits_q = self.net(x_qry[i], fast_weights, bn_training=True)
@@ -116,7 +116,7 @@ class Meta(nn.Module):
                 grad = torch.autograd.grad(loss, fast_weights)
                 # 3. theta_pi = theta_pi - train_lr * grad
                 fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
-
+                # 用 query set 计算 loss
                 logits_q = self.net(x_qry[i], fast_weights, bn_training=True)
                 # loss_q will be overwritten and just keep the loss_q on last update step.
                 loss_q = F.cross_entropy(logits_q, y_qry[i])

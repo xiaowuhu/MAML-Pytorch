@@ -4,7 +4,7 @@ import  os.path
 import  errno
 
 
-class Omniglot(data.Dataset):
+class OmniglotDataset(data.Dataset):
     urls = [
         'https://github.com/brendenlake/omniglot/raw/master/python/images_background.zip',
         'https://github.com/brendenlake/omniglot/raw/master/python/images_evaluation.zip'

@@ -7,7 +7,7 @@ from    torch.optim import lr_scheduler
 import  random, sys, pickle
 import  argparse
 
-from meta import Meta
+from meta_learner import MetaLearner
 
 
 def mean_confidence_interval(accs, confidence=0.95):
@@ -47,7 +47,7 @@ def main():
     ]
 
     device = torch.device('cuda')
-    maml = Meta(args, config).to(device)
+    maml = MetaLearner(args, config).to(device)
 
     tmp = filter(lambda x: x.requires_grad, maml.parameters())
     num = sum(map(lambda x: np.prod(x.shape), tmp))
